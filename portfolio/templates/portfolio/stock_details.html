@@ -1,0 +1,412 @@
+{% extends "portfolio/layout.html" %}
+{% load static %}
+
+{% block body %}
+    <div class="container mt-4">
+        {% if message %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% else %}
+            <div class="row">
+                <div class="col-md-8">
+                    <h2>{{ company_name }} ({{ stock.symbol }})</h2>
+                </div>
+                <div class="col-md-4">
+                    {% if is_active %}
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-wifi"></i> U.S. markets open
+                        </span>
+                    {% else %}
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-wifi-off"></i> U.S. markets closed
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <h1 style="display: inline-block; margin-right: 10px;">
+                        {% if price_delta > 0 %}
+                            <span style="color: green;">{{ current_price }}</span>
+                            <i class="bi bi-arrow-up" style="color: green; font-size: 2.1rem;"></i>
+                        {% elif price_delta == 0 %}
+                            <span style="color: grey;">{{ current_price }}</span>
+                        {% else %}
+                            <span style="color: red;">{{ current_price }}</span>
+                            <i class="bi bi-arrow-down" style="color: red; font-size: 2.1rem"></i>
+                        {% endif %}
+                    </h1>
+
+                    <h3 style="display: inline-block; margin-bottom: 0;">
+                        {% if price_delta > 0 %}
+                            <span style="color: green;">+{{ price_delta }} (+{{ delta_percentage }}%)</span>
+                        {% elif price_delta == 0 %}
+                            <span style="color: grey;">0.00 (0.00%)</span>
+                        {% else %}
+                            <span style="color: red;">{{ price_delta }} ({{ delta_percentage }}%)</span>
+                        {% endif %}
+                    </h3>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-4">
+                        <p>{{ company_bio }}</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Sector - Industry</p>
+                            <p>{{ sector }} - {{ industry }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Employee Count</p>
+                            <p>{{ employee_count }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Fiscal Year Ends</p>
+                            <p>{{ fy_end }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Website</p>
+                            <p><a href="{{ website }}" target="_blank" class="text-dark">{{ website }}</a></p>
+                        </div>
+                    </div>
+
+                    <h3>Daily Performance</h3>
+                    <canvas id="intradayChart"></canvas>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Prev Close</p>
+                            <p>{{ previous_close }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Open</p>
+                            <p>{{ latest_open }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Today's Range</p>
+                            <p>{{ latest_low }} - {{ latest_high }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">52-Week Range</p>
+                            <p>{{ fifty_two_week_low }} - {{ fifty_two_week_high }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Volume</p>
+                            <p>{{ latest_volume }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Average Volume</p>
+                            <p>{{ avg_volume }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Shares Outstanding</p>
+                            <p>{{ shares_outstanding }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Market Cap</p>
+                            <p>{{ market_cap }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">P/E Ratio (TTM)</p>
+                            <p>{{ pe_ratio }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">EPS (TTM)</p>
+                            <p>{{ eps }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">Beta (5-Year Monthly)</p>
+                            <p>{{ beta }}</p>
+                        </div>
+                        <div class="col-md-3 vertical-spacing">
+                            <p class="text-muted small">1y Target Est</p>
+                            <p>{{ target_mean_price }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <button class="btn btn-outline-black" onclick="toggleSection('historicalChartSection')">
+                        Historical Chart (All Time) <i class="bi bi-chevron-down" id="historicalChartSectionIcon"></i>
+                    </button>
+                    <div id="historicalChartSection" class="collapse">
+                        <canvas id="historicalChart"></canvas>
+                    </div>
+
+                    <button class="btn btn-outline-black" onclick="toggleSection('financialMetrics')">
+                        Financial Metrics <i class="bi bi-chevron-down" id="financialMetricsIcon"></i>
+                    </button>
+                    <div id="financialMetrics" class="collapse">
+                        <div class="row mt-3">
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Total Cash</p>
+                                <p>{{ total_cash }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Total Revenue</p>
+                                <p>{{ total_revenue }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Total Debt</p>
+                                <p>{{ total_debt }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">EBITDA</p>
+                                <p>{{ ebitda }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Free Cashflow</p>
+                                <p>{{ free_cf }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Operating Cashflow</p>
+                                <p>{{ operating_cf }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Earnings Growth</p>
+                                <p>{{ earnings_growth }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Revenue Growth</p>
+                                <p>{{ revenue_growth }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Debt-to-Equity Ratio</p>
+                                <p>{{ debt_to_equity }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Quick Ratio</p>
+                                <p>{{ quick_ratio }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Current Ratio</p>
+                                <p>{{ current_ratio }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Revenue per Share</p>
+                                <p>{{ revenue_per_share }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Return on Assets</p>
+                                <p>{{ return_on_assets }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Return on Equity</p>
+                                <p>{{ return_on_equity }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Operating Margins</p>
+                                <p>{{ operating_margins }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Gross Margins</p>
+                                <p>{{ gross_margins }}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline-black" onclick="toggleSection('shareInformation')">
+                        Share Information <i class="bi bi-chevron-down" id="shareInformationIcon"></i>
+                    </button>
+                    <div id="shareInformation" class="collapse">
+                        <div class="row mt-3">
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Float Shares</p>
+                                <p>{{ float_shares }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Shares Short</p>
+                                <p>{{ shares_short }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Short Ratio</p>
+                                <p>{{ short_ratio }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">% of Shares Held by All Insider</p>
+                                <p>{{ held_percent_insiders }}%</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">% of Shares Held by Institutions</p>
+                                <p>{{ held_percent_institutions }}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline-black" onclick="toggleSection('corporateGovernance')">
+                        Corporate Governance <i class="bi bi-chevron-down" id="corporateGovernanceIcon"></i>
+                    </button>
+                    <div id="corporateGovernance" class="collapse">
+                        <div class="row mt-3">
+                            <p>{{ company_name }}'s <a class="text-dark" href="https://www.issgovernance.com/esg/ratings/">ISS Governance Quality Score</a> as of {{ audit_date }}:</p>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Audit Risk</p>
+                                <p>{{ audit_risk }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Board Risk</p>
+                                <p>{{ board_risk }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Compensation Risk</p>
+                                <p>{{ compensation_risk }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Shareholder Rights Risk</p>
+                                <p>{{ shareholder_rights_risk }}</p>
+                            </div>
+                            <div class="col-md-3 vertical-spacing">
+                                <p class="text-muted small">Overall Risk</p>
+                                <p>{{ overall_risk }}</p>
+                            </div>
+                            <div class="alert alert-dark">
+                                Corporate governance scores courtesy of Institutional Shareholder Services (ISS) Scores indicate decile rank relative to index or region. A decile score of 1 indicates lower governance risk, while a 10 indicates higher governance risk.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline-black" onclick="toggleSection('otherData')">
+                        Other Useful Data <i class="bi bi-chevron-down" id="otherDataIcon"></i>
+                    </button>
+                    <div id="otherData" class="collapse">
+                        <div class="row mt-3">
+                            <div class="col-md-6 vertical-spacing">
+                                <p class="text-muted small">Forward Dividend & Yield</p>
+                                <p>{{ dividend_rate }} ({{ dividend_yield }}%)</p>
+                            </div>
+                            <div class="col-md-6 vertical-spacing">
+                                <p class="text-muted small">Ex-Dividend Date</p>
+                                <p>{{ ex_dividend_date }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h3>Recent News: {{ stock.symbol }}</h3>
+                    <div class="row">
+                        {% for news_item in company_news %}
+                            <div class="col-md-12 mb-3">
+                                <a href="{{ news_item.url }}" target="_blank" class="card-link text-decoration-none">
+                                    <div class="card">
+                                        <div class="row no-gutters">
+                                            <div class="col-md-3">
+                                                {% if news_item.urlToImage %}
+                                                    <img src="{{ news_item.urlToImage }}" class="card-img" alt="Thumbnail">
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-9">
+                                                <div class="card-body">
+                                                    <h5 class="card-title fw-bold title-hover-blue">{{ news_item.title }}</h5>
+                                                    <p class="card-text">
+                                                        {% if news_item.description %}
+                                                            {% if news_item.description|length > 140 %}
+                                                                {{ news_item.description|truncatechars:140 }}
+                                                            {% else %}
+                                                                {{ news_item.description }}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            No description available.
+                                                        {% endif %}
+                                                    </p>
+                                                    <p class="card-text text-muted small">{{ news_item.source.name }} - {{ news_item.formatted_time }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <nav aria-label="News Pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if company_news.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ company_news.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in company_news.paginator.page_range %}
+                                <li class="page-item {% if num == company_news.number %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
+                            
+                            {% if company_news.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ company_news.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+
+                <div class="col-md-4">
+                    {% if company_logo %}
+                        <img src="{{ company_logo }}" alt="{{ company_name }} logo" class="img-fluid mb-3">
+                    {% endif %}
+
+                    <button class="btn btn-info w-100" id="buyStockButton" onclick="toggleBuyStockForm()">Buy Stock</button>
+
+                    <div id="buyStockForm" style="display: none;">
+                        <form method="post" action="{% url 'buy_stock' %}" onsubmit="handleSubmit(event)">
+                            {% csrf_token %}
+                            <input type="hidden" name="stock_id" value="{{ stock.id }}">
+                            <div class="form-group">
+                                <label for="quantity">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="price">Purchase Price</label>
+                                <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ current_price}}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Purchase Date</label>
+                                <input type="date" class="form-control" id="date" name="date" required>
+                            </div>
+                            <div class="text-end mt-3">
+                                <button type="submit" class="btn btn-warning">Buy Stock</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <h5>Company Officers</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Title</th>
+                                <th>Age</th>
+                                <th>Salary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for officer in company_officers %}
+                                <tr>
+                                    <td>{{ officer.name|default:"N/A" }}</td>
+                                    <td>{{ officer.title|default:"N/A" }}</td>
+                                    <td>{{ officer.age|default:"N/A" }}</td>
+                                    <td>{{ officer.totalPayFormatted|default:"N/A" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <script id="intradayData" type="application/json">{{ intraday_data }}</script>
+            <script id="historicalData" type="application/json">{{ historical_data }}</script>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'portfolio/price_chart.js' %}"></script>
+    <script src="{% static 'portfolio/stock_details.js' %}"></script>
+{% endblock %}

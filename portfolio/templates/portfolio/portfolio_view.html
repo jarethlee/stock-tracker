@@ -1,0 +1,121 @@
+{% extends "portfolio/layout.html" %}
+{% load static %}
+
+{% block body %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col">
+                <h2 style="font-weight: bold;">${{ portfolio_value }}</h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-2 vertical-spacing">
+                <p class="text-muted small">Day Change</p>
+                {% if day_change > 0 %}
+                    <p style="color: green;">+{{ day_change }}</p>
+                {% elif day_change == 0 %}
+                    <p style="color: grey;">{{ day_change }}</p>
+                {% else %}
+                    <p style="color: red;">{{ day_change }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-2 vertical-spacing">
+                <p class="text-muted small">% Change</p>
+                {% if percent_change > 0 %}
+                    <p style="color: green;">+{{ percent_change }}%</p>
+                {% elif percent_change == 0 %}
+                    <p style="color: grey;">{{ percent_change }}%</p>
+                {% else %}
+                    <p style="color: red;">{{ percent_change }}%</p>
+                {% endif %}
+            </div>
+            <div class="col-md-2 vertical-spacing">
+                <p class="text-muted small">Unrealised Gain/Loss</p>
+                {% if unrealised_gain_loss > 0 %}
+                    <p style="color: green;">+{{ unrealised_gain_loss }}</p>
+                {% elif unrealised_gain_loss == 0 %}
+                    <p style="color: grey;">{{ unrealised_gain_loss }}</p>
+                {% else %}
+                    <p style="color: red;">{{ unrealised_gain_loss }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <h4>Portfolio Performance (Past 1 Month)</h4>
+                <canvas id="portfolioPerformanceChart"></canvas>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+            <div class="col">
+                <h4>My Holdings</h4>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Shares</th>
+                            <th>Average Cost</th>
+                            <th>Current Price</th>
+                            <th>Cost Basis</th>
+                            <th>Market Value</th>
+                            <th>Day Change</th>
+                            <th>% Change</th>
+                            <th>Unrealised Gain/Loss</th>
+                        </tr>
+                      </thead>
+                      <tbody id="holdingsTableBody">
+                        {% for holding in holdings %}
+                            <tr>
+                                <td><a href="{% url 'stock_details' holding.symbol %}" class="text-decoration-none text-dark">{{ holding.symbol }}</a></td>
+                                <td><a href="{% url 'stock_details' holding.symbol %}" class="text-decoration-none text-dark">{{ holding.name }}</a></td>
+                                <td>{{ holding.total_quantity }}</td>
+                                <td>{{ holding.average_cost }}</td>
+                                <td>{{ holding.current_price }}</td>
+                                <td>{{ holding.cost_basis }}</td>
+                                <td>{{ holding.market_value }}</td>
+                                <td>
+                                    {% if holding.day_change > 0 %}
+                                        <p style="color: green;">+{{ holding.day_change }}</p>
+                                    {% elif holding.day_change == 0 %}
+                                        <p style="color: grey;">{{ holding.day_change }}</p>
+                                    {% else %}
+                                        <p style="color: red;">{{ holding.day_change }}</p>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if holding.percent_change > 0 %}
+                                        <p style="color: green;">+{{ holding.percent_change }}%</p>
+                                    {% elif holding.percent_change == 0 %}
+                                        <p style="color: grey;">{{ holding.percent_change }}%</p>
+                                    {% else %}
+                                        <p style="color: red;">{{ holding.percent_change }}%</p>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if holding.unrealised_gain_loss > 0 %}
+                                        <p style="color: green;">+{{ holding.unrealised_gain_loss }}</p>
+                                    {% elif holding.unrealised_gain_loss == 0 %}
+                                        <p style="color: grey;">{{ holding.unrealised_gain_loss }}</p>
+                                    {% else %}
+                                        <p style="color: red;">{{ holding.unrealised_gain_loss }}</p>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                      </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script id="portfolioPerformanceData" type="application/json">{{ portfolio_performance_data }}</script>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'portfolio/portfolio_chart.js' %}"></script>
+{% endblock %}
